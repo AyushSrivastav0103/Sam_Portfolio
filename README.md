@@ -23,19 +23,19 @@ A full-stack portfolio project using Node.js (Express), React, and Tailwind CSS.
 ## 📦 Installation
 
 1. **Clone the repository:**
-   ```sh
+```sh
 git clone https://github.com/AyushSrivastav0103/Sam_Portfolio.git
 cd Sam_Portfolio
 ```
 
 2. **Install all dependencies:**
-   ```sh
+```sh
 npm install
 ```
 
 3. **Install Tailwind CSS and its dependencies explicitly:**
-   > This ensures you get `tailwind.config.js` and `postcss.config.js` generated if missing.
-   ```sh
+> This ensures you get `tailwind.config.js` and `postcss.config.js` generated if missing.
+```sh
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
