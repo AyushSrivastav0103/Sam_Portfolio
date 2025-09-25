@@ -338,39 +338,74 @@ const Portfolio = () => {
             </p>
           </div>
 
-          {/* Project Cards */}
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {projects.map((project, index) => (
-              <div key={index}>
-                <h3 className="text-3xl font-bold mb-6">{project.title}</h3>
-                <p className="text-gray-600 mb-8 leading-relaxed">{project.description}</p>
-                
-                <div className="space-y-4 mb-8">
-                  {project.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center">
-                      <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      </div>
-                      <span className="text-gray-700">{feature}</span>
-                    </div>
-                  ))}
+          {/* Project Cards Grid */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Project 1 - ForecastIQ */}
+            <div className="group relative bg-gradient-to-br from-teal-500 to-blue-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">📊</span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">ForecastIQ</h3>
+                <p className="text-white/90 mb-6">Demand Forecasting Platform with ML-powered predictions reducing stockouts by 18%</p>
+                <div className="flex items-center text-white/80">
+                  <span className="text-sm">View Project</span>
+                  <ArrowRight className="ml-2" size={16} />
                 </div>
               </div>
-            ))}
-            
-            <div className="relative">
-              <div className={`bg-gradient-to-br ${projects[0].gradient} rounded-3xl p-8 text-white relative overflow-hidden`}>
-                <div className="relative z-10">
-                  <div className="w-24 h-24 bg-white/20 rounded-full mb-6 flex items-center justify-center">
-                    <Play className="text-white text-3xl ml-1" />
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 inline-block">
-                    <p className="text-lg font-medium">{projects[0].status}</p>
-                  </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
+            </div>
+
+            {/* Project 2 - Customer360 */}
+            <div className="group relative bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">👥</span>
                 </div>
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full"></div>
-                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full"></div>
+                <h3 className="text-2xl font-bold text-white mb-4">Customer360</h3>
+                <p className="text-white/90 mb-6">Unified customer data platform with real-time analytics and lifecycle insights</p>
+                <div className="flex items-center text-white/80">
+                  <span className="text-sm">View Project</span>
+                  <ArrowRight className="ml-2" size={16} />
+                </div>
               </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
+            </div>
+
+            {/* Project 3 - AutoReport */}
+            <div className="group relative bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">🤖</span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">AutoReport</h3>
+                <p className="text-white/90 mb-6">Automated reporting system saving 30+ hours weekly with intelligent insights</p>
+                <div className="flex items-center text-white/80">
+                  <span className="text-sm">View Project</span>
+                  <ArrowRight className="ml-2" size={16} />
+                </div>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
+            </div>
+
+            {/* Project 4 - SupplyChainAI */}
+            <div className="group relative bg-gradient-to-br from-green-500 to-teal-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">🚚</span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">SupplyChainAI</h3>
+                <p className="text-white/90 mb-6">End-to-end supply chain optimization with predictive analytics and routing</p>
+                <div className="flex items-center text-white/80">
+                  <span className="text-sm">View Project</span>
+                  <ArrowRight className="ml-2" size={16} />
+                </div>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
             </div>
           </div>
         </div>
