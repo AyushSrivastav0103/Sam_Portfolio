@@ -9,45 +9,68 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 
-// Resolve a safe absolute path for messages.json from the project root
+// ----------------------
+// ✅ Google OAuth Setup
+// ----------------------
+const CREDENTIALS_PATH = path.resolve(process.cwd(), 'credentials.json');
+const TOKEN_PATH = path.resolve(process.cwd(), 'token.json');
+
+let oauth2Client = null;
+
+function getOAuthClient() {
+  if (oauth2Client) return oauth2Client;
+  if (!fs.existsSync(CREDENTIALS_PATH) || !fs.existsSync(TOKEN_PATH)) {
+    console.warn('⚠️ Google OAuth credentials or token not found. Calendar integration will be skipped.');
+    return null;
+  }
+  const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+  const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+
+  const { client_secret, client_id, redirect_uris } = credentials.installed || credentials.web;
+  const client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+  client.setCredentials(token);
+  oauth2Client = client;
+  return oauth2Client;
+}
+
+// ----------------------
+// App Setup
+// ----------------------
 const messagesFile = path.resolve(process.cwd(), 'messages.json');
 const bookingsFile = path.resolve(process.cwd(), 'bookings.json');
 
 const app = express();
 const port = process.env.PORT || 5174;
 
-// Middleware
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('tiny'));
 
-// Basic rate limit for API
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
 app.use('/api/', apiLimiter);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+// ----------------------
+// Health Check
+// ----------------------
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Contact endpoint
+// ----------------------
+// Contact Form
+// ----------------------
 app.post('/api/contact', async (req, res) => {
   const { name, email, message, website } = req.body || {};
-  // Honeypot field "website" should be empty
   if (website) return res.status(200).json({ success: true });
-  if (!email || !message) {
-    return res.status(400).json({ error: 'email and message are required' });
-  }
+  if (!email || !message) return res.status(400).json({ error: 'email and message are required' });
+
   const payload = { name, email, message, ts: new Date().toISOString(), ip: req.ip };
-  console.log('Contact submission:', payload);
   try {
-    // Persist to JSON file
-    const existing = fs.existsSync(messagesFile) ? JSON.parse(fs.readFileSync(messagesFile, 'utf-8') || '[]') : [];
+    const existing = fs.existsSync(messagesFile)
+      ? JSON.parse(fs.readFileSync(messagesFile, 'utf-8') || '[]')
+      : [];
     existing.push(payload);
     fs.writeFileSync(messagesFile, JSON.stringify(existing, null, 2));
 
-    // Send email if SMTP configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.TO_EMAIL) {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -62,49 +85,46 @@ app.post('/api/contact', async (req, res) => {
         text: `Name: ${name || '-'}\nEmail: ${email}\nMessage:\n${message}`,
       });
     }
+    res.json({ success: true });
   } catch (err) {
     console.error('Failed to persist or email contact message:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    res.status(500).json({ error: 'Internal error' });
   }
-  res.json({ success: true });
 });
 
-// --- Discovery Call Booking ---
-// Helpers
+// ----------------------
+// Booking Helpers
+// ----------------------
 const SLOT_MINUTES = Number(process.env.SLOT_MINUTES || 20);
-const START_HOUR = Number(process.env.START_HOUR || 10); // 10:00
-const END_HOUR = Number(process.env.END_HOUR || 17); // 17:00 (exclusive end)
+const START_HOUR = Number(process.env.START_HOUR || 10);
+const END_HOUR = Number(process.env.END_HOUR || 17);
 
 function readJsonSafe(filePath) {
   if (!fs.existsSync(filePath)) return [];
   try {
-    const text = fs.readFileSync(filePath, 'utf-8') || '[]';
-    return JSON.parse(text);
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8') || '[]');
   } catch {
     return [];
   }
 }
-
 function writeJsonSafe(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
-
 function generateSlotsForDate(dateStr) {
-  // dateStr: YYYY-MM-DD
   const [y, m, d] = dateStr.split('-').map(Number);
   if (!y || !m || !d) return [];
   const slots = [];
-  const start = new Date(y, m - 1, d, START_HOUR, 0, 0, 0);
-  const end = new Date(y, m - 1, d, END_HOUR, 0, 0, 0);
+  const start = new Date(y, m - 1, d, START_HOUR, 0);
+  const end = new Date(y, m - 1, d, END_HOUR, 0);
   for (let t = new Date(start); t < end; t = new Date(t.getTime() + SLOT_MINUTES * 60000)) {
-    const hh = String(t.getHours()).padStart(2, '0');
-    const mm = String(t.getMinutes()).padStart(2, '0');
-    slots.push(`${hh}:${mm}`);
+    slots.push(`${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`);
   }
   return slots;
 }
 
-// GET /api/availability?date=YYYY-MM-DD
+// ----------------------
+// Availability Endpoint
+// ----------------------
 app.get('/api/availability', (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' });
@@ -115,57 +135,65 @@ app.get('/api/availability', (req, res) => {
   res.json({ date, slotMinutes: SLOT_MINUTES, startHour: START_HOUR, endHour: END_HOUR, available });
 });
 
-// POST /api/book { name, email, date: YYYY-MM-DD, time: HH:MM }
+// ----------------------
+// Booking Endpoint
+// ----------------------
 app.post('/api/book', async (req, res) => {
   const { name, email, date, time } = req.body || {};
   if (!email || !date || !time) return res.status(400).json({ error: 'email, date, and time are required' });
+
   const slots = generateSlotsForDate(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'invalid slot' });
+
   const bookings = readJsonSafe(bookingsFile);
-  const conflict = bookings.find(b => b.date === date && b.time === time);
-  if (conflict) return res.status(409).json({ error: 'slot already booked' });
+  if (bookings.find(b => b.date === date && b.time === time)) {
+    return res.status(409).json({ error: 'slot already booked' });
+  }
 
   const booking = { id: `${date}-${time}`, name, email, date, time, durationMinutes: SLOT_MINUTES, ts: new Date().toISOString() };
   bookings.push(booking);
+
   try {
     writeJsonSafe(bookingsFile, bookings);
-    // If Google Calendar is configured, create an event and rely on Google invite (single email to attendee)
-    if (process.env.GCAL_CALENDAR_ID && (process.env.GCAL_SERVICE_ACCOUNT_JSON || process.env.GCAL_SERVICE_ACCOUNT_B64)) {
-      const tz = process.env.TIMEZONE || 'America/Toronto';
+
+    // -------------------
+    // Google Calendar
+    // -------------------
+    let joinUrl = process.env.MEETING_URL || 'https://meet.google.com';
+    const client = getOAuthClient();
+    if (client && process.env.GCAL_CALENDAR_ID) {
+      const calendar = google.calendar({ version: 'v3', auth: client });
+      const tz = process.env.TIMEZONE || 'Asia/Kolkata';
       const [y, m, d] = date.split('-').map(Number);
       const [hh, mm] = time.split(':').map(Number);
       const start = new Date(Date.UTC(y, m - 1, d, hh, mm));
       const end = new Date(start.getTime() + SLOT_MINUTES * 60000);
 
-      // Build service account credentials
-      let creds;
-      if (process.env.GCAL_SERVICE_ACCOUNT_B64) {
-        creds = JSON.parse(Buffer.from(process.env.GCAL_SERVICE_ACCOUNT_B64, 'base64').toString('utf8'));
-      } else {
-        creds = JSON.parse(process.env.GCAL_SERVICE_ACCOUNT_JSON);
-      }
-
-      const jwt = new google.auth.JWT(
-        creds.client_email,
-        undefined,
-        creds.private_key,
-        ['https://www.googleapis.com/auth/calendar.events']
-      );
-      const calendar = google.calendar({ version: 'v3', auth: jwt });
-
-      await calendar.events.insert({
+      const event = await calendar.events.insert({
         calendarId: process.env.GCAL_CALENDAR_ID,
         sendUpdates: 'all',
+        conferenceDataVersion: 1,
         requestBody: {
           summary: 'Discovery Call',
           description: `Discovery call with ${name || email}`,
           start: { dateTime: start.toISOString(), timeZone: tz },
           end: { dateTime: end.toISOString(), timeZone: tz },
-          attendees: [ { email } ],
+          attendees: [{ email }],
+          conferenceData: {
+            createRequest: {
+              requestId: `${date}-${time}-${email}`.replace(/[^a-zA-Z0-9]/g, ''),
+              conferenceSolutionKey: { type: 'hangoutsMeet' },
+            },
+          },
         },
       });
-    } else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      // Otherwise, fall back to one email to the attendee (no duplicate admin email)
+      joinUrl = event.data.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri || joinUrl;
+    }
+
+    // -------------------
+    // Email Invite
+    // -------------------
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT || 587),
@@ -173,60 +201,49 @@ app.post('/api/book', async (req, res) => {
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       });
       const subject = `Discovery Call — ${date} ${time}`;
-      const joinUrl = process.env.MEETING_URL || 'https://meet.google.com';
-      const text = `Thanks for booking!\n\nDetails:\nDate: ${date}\nTime: ${time} (${SLOT_MINUTES} minutes)\nJoin: ${joinUrl}\n`;
+      const text = `Thanks for booking!\n\nDetails:\nDate: ${date}\nTime: ${time}\nJoin: ${joinUrl}\n`;
 
-      // Create ICS invite attachment
-      const [y, m, d] = date.split('-').map(Number);
-      const [hh, mm] = time.split(':').map(Number);
-      const dtStart = new Date(Date.UTC(y, m - 1, d, hh, mm));
+      const dtStart = new Date(`${date}T${time}:00Z`);
       const dtEnd = new Date(dtStart.getTime() + SLOT_MINUTES * 60000);
-      const toIcs = (dt) => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-      const uid = `${date}-${time}@sam-portfolio`;
-      const organizer = process.env.FROM_EMAIL || process.env.SMTP_USER;
+      const toIcs = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
       const ics = [
         'BEGIN:VCALENDAR',
-        'PRODID:-//Sam Portfolio//Booking//EN',
         'VERSION:2.0',
-        'CALSCALE:GREGORIAN',
         'METHOD:REQUEST',
         'BEGIN:VEVENT',
-        `UID:${uid}`,
+        `UID:${booking.id}@sam-portfolio`,
         `DTSTAMP:${toIcs(new Date())}`,
         `DTSTART:${toIcs(dtStart)}`,
         `DTEND:${toIcs(dtEnd)}`,
-        'SUMMARY:Discovery Call',
+        `SUMMARY:Discovery Call`,
         `DESCRIPTION:Join link: ${joinUrl}\\nBooked for ${name || email}`,
-        `ORGANIZER;CN=Portfolio:${organizer}`,
-        `ATTENDEE;CN=${name || email};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:MAILTO:${email}`,
-        `URL:${joinUrl}`,
+        `ATTENDEE;CN=${name || email}:MAILTO:${email}`,
         'END:VEVENT',
-        'END:VCALENDAR'
+        'END:VCALENDAR',
       ].join('\r\n');
 
       await transporter.sendMail({
-        from: organizer,
+        from: process.env.FROM_EMAIL || process.env.SMTP_USER,
         to: email,
         subject,
         text,
-        attachments: [{ filename: 'invite.ics', content: ics, contentType: 'text/calendar; method=REQUEST; charset=UTF-8' }]
+        attachments: [{ filename: 'invite.ics', content: ics, contentType: 'text/calendar; method=REQUEST; charset=UTF-8' }],
       });
     }
+
+    res.json({ success: true, booking });
   } catch (err) {
     console.error('Failed to persist or email booking:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    res.status(500).json({ error: 'Internal error' });
   }
-  res.json({ success: true, booking });
 });
 
-// Resume download logging
+// ----------------------
+// Resume Download Log
+// ----------------------
 app.get('/api/resume', (req, res) => {
   console.log('Resume requested from', req.ip);
   res.json({ ok: true });
 });
 
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
-});
-
-
+app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
