@@ -8,6 +8,7 @@
     "server": "node server.js",
     "server:dev": "nodemon --watch server.js server.js",
     "build": "vite build",
+    "vercel-build": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
