@@ -4,6 +4,15 @@ import { ChevronDown, Star, Calendar, ArrowRight, Menu, X, Play, Github, Linkedi
 const Portfolio = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('home');
+  
+  // Test: Simple return to debug white screen
+  return (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h1>Portfolio Test</h1>
+      <p>If you can see this, React is working!</p>
+    </div>
+  );
+  
   // Removed voice recording UI for a cleaner data-focused hero
 
   // Smooth scroll animation
