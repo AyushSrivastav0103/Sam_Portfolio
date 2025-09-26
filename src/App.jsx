@@ -1,13 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, Star, Calendar, ArrowRight, Menu, X, Play, Github, Linkedin, Mail, ExternalLink } from 'lucide-react';
 
 const Portfolio = () => {
-  return (
-    <div style={{ padding: '20px', textAlign: 'center', backgroundColor: 'lightblue' }}>
-      <h1 style={{ color: 'red' }}>Portfolio Test</h1>
-      <p style={{ color: 'blue' }}>If you can see this, React is working!</p>
-    </div>
-  );
-  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentSection, setCurrentSection] = useState('home');
   // Removed voice recording UI for a cleaner data-focused hero
 
   // Smooth scroll animation
