@@ -8,5 +8,22 @@
         "distDir": "dist"
       }
     }
-  ]
+  ],
+  "functions": {
+    "api/contact.js": {
+      "maxDuration": 10
+    },
+    "api/book.js": {
+      "maxDuration": 10
+    },
+    "api/availability.js": {
+      "maxDuration": 10
+    },
+    "api/resume.js": {
+      "maxDuration": 10
+    },
+    "api/health.js": {
+      "maxDuration": 10
+    }
+  }
 }
