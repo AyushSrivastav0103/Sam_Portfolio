@@ -9,14 +9,14 @@ function getEmailTransporter() {
   
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
     auth: { 
       user: process.env.SMTP_USER, 
       pass: process.env.SMTP_PASS 
     },
     tls: {
-      rejectUnauthorized: false
+      rejectUnauthorized: process.env.NODE_ENV === 'production'
     }
   });
 }
@@ -73,12 +73,15 @@ export default async function handler(req, res) {
     if (transporter) {
       try {
         // Send notification email
-        const adminEmail = process.env.TO_EMAIL || process.env.SMTP_USER;
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+        const clientEmail = process.env.CLIENT_EMAIL;
+        const recipients = [adminEmail];
+        if (clientEmail) recipients.push(clientEmail);
         
-        if (adminEmail) {
+        if (recipients.length > 0) {
           await transporter.sendMail({
             from: `"Portfolio Contact" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
-            to: adminEmail,
+            to: recipients.join(', '),
             replyTo: email,
             subject: `New Contact: ${name || email}`,
             html: `
