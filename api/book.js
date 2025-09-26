@@ -173,21 +173,42 @@ export default async function handler(req, res) {
       await transporter.sendMail({
         from: `"${process.env.SITE_NAME || 'Portfolio'}" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
         to: recipients.join(', '),
-        subject: `📅 New Discovery Call Booked - ${date} ${time}`,
+        subject: `📅 New Discovery Call Booked - ${date} at ${time}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">New Discovery Call Booked</h2>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
-              <p><strong>Name:</strong> ${name || 'Not provided'}</p>
-              <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-              <p><strong>Date:</strong> ${date}</p>
-              <p><strong>Time:</strong> ${time} (${TIMEZONE})</p>
-              <p><strong>Duration:</strong> ${SLOT_MINUTES} minutes</p>
-              <p><strong>Meeting Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>
+            <p>Hi there,</p>
+            <p>A new discovery call has been booked through the portfolio website.</p>
+            
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #333;">Meeting Details</h3>
+              <p><strong>📅 Date:</strong> ${date}</p>
+              <p><strong>⏰ Time:</strong> ${time} (${TIMEZONE})</p>
+              <p><strong>⏱️ Duration:</strong> ${SLOT_MINUTES} minutes</p>
+              <p><strong>📍 Location:</strong> Online (Google Meet)</p>
+              <p><strong>👤 Attendee:</strong> ${name || 'Not provided'} (${email})</p>
+              <p style="margin-top: 15px;">
+                <a href="${meetingLink}" style="background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                  Join Meeting
+                </a>
+              </p>
             </div>
-            ${calendarEventId ? `<p style="color: #666;">✅ Calendar event created (ID: ${calendarEventId})</p>` : ''}
+            
+            <div style="background: #fff9e6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>📌 Meeting Preparation:</strong></p>
+              <ul>
+                <li>Please join 2-3 minutes early to test your audio/video</li>
+                <li>Have any questions or topics you'd like to discuss ready</li>
+                <li>Be in a quiet environment with stable internet</li>
+              </ul>
+            </div>
+            
+            ${calendarEventId ? `<p style="color: #666; background: #e8f5e8; padding: 10px; border-radius: 5px;">✅ Calendar event created (ID: ${calendarEventId})</p>` : ''}
+            
+            <p>Best regards,<br>${process.env.SITE_NAME || 'Portfolio System'}</p>
           </div>
-        `
+        `,
+        text: `New Discovery Call Booked!\n\nDate: ${date}\nTime: ${time} (${TIMEZONE})\nDuration: ${SLOT_MINUTES} minutes\nAttendee: ${name || 'Not provided'} (${email})\nJoin: ${meetingLink}\n\nMeeting Preparation:\n- Join 2-3 minutes early\n- Have questions ready\n- Be in a quiet environment\n\nBest regards,\n${process.env.SITE_NAME || 'Portfolio System'}`
       });
 
       // Confirmation email to the person who booked
