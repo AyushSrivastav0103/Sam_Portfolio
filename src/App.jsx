@@ -1,9 +1,237 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Star, Calendar, ArrowRight, Menu, X, Play, Github, Linkedin, Mail, ExternalLink } from 'lucide-react';
+import {
+  ChevronDown,
+  Star,
+  Calendar,
+  ArrowRight,
+  Menu,
+  X,
+  Play,
+  Github,
+  Linkedin,
+  Mail,
+  ExternalLink,
+  BarChart3,
+  Boxes,
+} from 'lucide-react';
+
+/* ---------- Case Study Data & Helpers ---------- */
+
+const projectDetails = [
+  {
+    id: 'workforce-forecasting',
+    icon: BarChart3,
+    title: 'Workforce Demand Forecasting – Walmart',
+    shortTagline:
+      'Hourly labor forecasting and staffing optimization across hundreds of stores.',
+    shortImpact: '8–12% reduction in overtime and smoother peak coverage.',
+    gradient: 'from-teal-500 via-sky-500 to-blue-600',
+    overview:
+      'Designed and deployed large-scale workforce demand forecasting for Walmart, generating hourly labor forecasts per store and department. The forecasts feed an optimization engine that builds compliant, cost-efficient schedules for managers.',
+    problem: [
+      'Need for accurate hourly demand predictions for staffing across hundreds of stores.',
+      'Under- or over-staffing directly impacts customer experience, labor costs, and manager workload.',
+    ],
+    dataSources: [
+      'Historical staffing and headcount logs',
+      'Foot traffic and in-store mobility sensors',
+      'POS transactions and hourly sales',
+      'Weather forecasts and alerts',
+      'Promotions, markdowns, and flyers',
+      'Holiday and seasonal trend indicators',
+    ],
+    features: [
+      'Lag features (1, 7, 14, 28, 365 days)',
+      'Rolling averages and exponential smoothing features',
+      'Weather impact indices and promo uplift multipliers',
+      'Hourly / weekly seasonality encoding',
+      'Department-level workload distribution models',
+    ],
+    modeling: [
+      'SARIMAX for highly seasonal demand patterns in specific stores',
+      'XGBoost to capture rich cross-feature interactions and price/promo effects',
+      'LSTM / GRU models for long-range temporal dependencies',
+      'Temporal Fusion Transformer (TFT) for multi-horizon forecasting with covariates',
+    ],
+    optimization: [
+      'Linear programming–based scheduler translating forecasted labor demand into optimal shifts',
+      'Constraints modeling labor rules, skills, multi-department coverage, and break structures',
+      'OR-Tools powered shift optimization and skill-based assignment routing',
+      'Scenario simulation for holidays and special events to stress-test staffing plans',
+    ],
+    impact: [
+      '8–12% reduction in overtime costs',
+      'Improved department-level coverage during peak hours',
+      'Reduced queue times at front-end operations (checkout, customer service)',
+      'Automated schedule generation that significantly reduced manager decision burden',
+    ],
+    stack: [
+      'Python, Pandas, NumPy, SQL',
+      'Scikit-learn, XGBoost',
+      'PyTorch (LSTM, GRU, Temporal Fusion Transformer)',
+      'SARIMAX',
+      'OR-Tools, PuLP',
+      'Spark / Databricks, Airflow',
+    ],
+  },
+  {
+    id: 'supply-chain-forecasting',
+    icon: Boxes,
+    title: 'SKU-Level Supply Chain Forecasting – Walmart',
+    shortTagline:
+      'Multi-horizon SKU demand forecasting for DC planning and store replenishment.',
+    shortImpact: '5–18% reduction in stockouts and lower carrying / spoilage cost.',
+    gradient: 'from-fuchsia-500 via-pink-500 to-rose-500',
+    overview:
+      'Built a SKU-level demand forecasting and inventory optimization engine to support Walmart distribution centers and store replenishment. The system produces multi-horizon forecasts and converts them into safety stock and reorder recommendations.',
+    problem: [
+      'SKU demand varies strongly by region, season, promotions, and price changes.',
+      'Incorrect forecasts lead to stockouts, overstock, spoilage, and higher logistics and carrying costs.',
+    ],
+    dataSources: [
+      'Historical SKU-level demand and sales',
+      'Store/DC inventory levels',
+      'Price and promotional activity, elasticity indicators',
+      'Supplier lead times and service levels',
+      'Seasonal and holiday trends and regional patterns',
+      'Weather signals that impact specific categories',
+    ],
+    features: [
+      'Hierarchical time-series structure (SKU → Category → Store / Region)',
+      'Lag stacks up to 52 weeks with multiple granularities',
+      'Promo and price elasticity features with uplift modeling',
+      'Stockout correction logic to avoid training on censored demand',
+      'Weather sensitivity indicators per category',
+      'Calendar-based season flags (festive periods, back-to-school, etc.)',
+    ],
+    modeling: [
+      'Prophet and SARIMAX for season-rich, lower-volume categories',
+      'LightGBM for large-scale multi-SKU forecasting',
+      'Deep learning models (TFT, N-BEATS) for multi-horizon forecasts on high-value SKUs',
+    ],
+    optimization: [
+      'Dynamic safety stock calculations based on forecast error and service levels',
+      'Reorder point optimization combining forecast, lead time, and variability',
+      'Automated replenishment recommendations from DC to store level',
+      'Risk scoring for potential stockouts and overstock situations',
+    ],
+    impact: [
+      '5–18% reduction in stockouts across key categories',
+      'More consistent DC-to-store allocation and replenishment cycles',
+      'Lower carrying and spoilage costs, especially for perishable items',
+      'Improved on-shelf availability and product freshness for customers',
+    ],
+    stack: [
+      'Python, Pandas, NumPy, SQL',
+      'LightGBM, CatBoost',
+      'PyTorch (TFT, N-BEATS)',
+      'Prophet, SARIMAX',
+      'Spark / Databricks, Airflow',
+    ],
+  },
+];
+
+const InfoBlock = ({ title, items }) => (
+  <div>
+    <h4 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 mb-2">
+      {title}
+    </h4>
+    <ul className="space-y-1.5 text-sm text-slate-700">
+      {items.map((item) => (
+        <li key={item} className="flex gap-2">
+          <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-300" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+const ProjectModal = ({ project, onClose }) => {
+  if (!project) return null;
+  const Icon = project.icon;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 sm:p-8">
+      <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 sm:px-8">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr ${project.gradient} text-white shadow-md`}
+            >
+              <Icon className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
+                {project.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500">
+                {project.shortImpact}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition"
+            aria-label="Close case study"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-7 text-sm sm:text-base text-slate-700">
+          <p className="leading-relaxed">{project.overview}</p>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <InfoBlock title="Business Problem" items={project.problem} />
+            <InfoBlock title="Key Data Sources" items={project.dataSources} />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <InfoBlock
+              title="Feature Engineering Highlights"
+              items={project.features}
+            />
+            <InfoBlock title="Modeling Approach" items={project.modeling} />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 items-start">
+            <InfoBlock
+              title="Optimization / Decision Layer"
+              items={project.optimization}
+            />
+            <InfoBlock title="Business Impact" items={project.impact} />
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 mb-2">
+              Tech Stack
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {project.stack.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Main Component ---------- */
 
 const Portfolio = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('home');
+  const [activeProject, setActiveProject] = useState(null);
   // Removed voice recording UI for a cleaner data-focused hero
 
   // Smooth scroll animation
@@ -13,8 +241,6 @@ const Portfolio = () => {
     setIsMenuOpen(false);
   };
 
-  // No voice interaction needed
-
   // Contact links (update with your real links)
   const contact = {
     email: 'shubham.banger@example.com',
@@ -23,10 +249,20 @@ const Portfolio = () => {
   };
 
   const skills = [
-    'Data Science', 'Machine Learning', 'Big Data Analytics', 'Data Engineering',
-    'Data Management', 'Predictive Analytics', 'Customer Insights',
-    'Retail & eCommerce Analytics', 'ETL & Data Pipelines', 'Python', 'SQL',
-    'Forecasting', 'Reporting Automation', 'NLP'
+    'Data Science',
+    'Machine Learning',
+    'Big Data Analytics',
+    'Data Engineering',
+    'Data Management',
+    'Predictive Analytics',
+    'Customer Insights',
+    'Retail & eCommerce Analytics',
+    'ETL & Data Pipelines',
+    'Python',
+    'SQL',
+    'Forecasting',
+    'Reporting Automation',
+    'NLP',
   ];
 
   const tools = [
@@ -36,73 +272,88 @@ const Portfolio = () => {
     { name: 'Pinecone', icon: '🌲' },
     { name: 'NotebookLM', icon: '📚' },
     { name: 'Make.com', icon: '⚡' },
-    { name: 'Zapier', icon: '🔗' }
+    { name: 'Zapier', icon: '🔗' },
   ];
 
   const experiences = [
-    { role: 'Senior Data Operations Manager', company: 'Samsara', period: 'Jul 2025 - Present' },
-    { role: 'Manager, Performance Analytics and Data Science', company: 'Walmart Canada', period: 'Jan 2023 - Jul 2025' },
-    { role: 'Senior Data Analyst', company: 'Walmart Canada', period: 'Jun 2021 - Dec 2022' },
-    { role: 'Analyst, National Continuous Improvement', company: 'Walmart Canada', period: 'Mar 2020 - Jun 2021' },
-    { role: 'Information Technology System, Data Lead', company: 'Fastfrate', period: 'Jul 2018 - Feb 2020' },
-    { role: 'Business Intelligence', company: 'TFI International Inc.', period: 'Aug 2016 - Jul 2018' }
+    {
+      role: 'Senior Data Operations Manager',
+      company: 'Samsara',
+      period: 'Jul 2025 - Present',
+    },
+    {
+      role: 'Manager, Performance Analytics and Data Science',
+      company: 'Walmart Canada',
+      period: 'Jan 2023 - Jul 2025',
+    },
+    {
+      role: 'Senior Data Analyst',
+      company: 'Walmart Canada',
+      period: 'Jun 2021 - Dec 2022',
+    },
+    {
+      role: 'Analyst, National Continuous Improvement',
+      company: 'Walmart Canada',
+      period: 'Mar 2020 - Jun 2021',
+    },
+    {
+      role: 'Information Technology System, Data Lead',
+      company: 'Fastfrate',
+      period: 'Jul 2018 - Feb 2020',
+    },
+    {
+      role: 'Business Intelligence',
+      company: 'TFI International Inc.',
+      period: 'Aug 2016 - Jul 2018',
+    },
   ];
 
   const testimonials = [
     {
-      text: "Delivered measurable impact on inventory accuracy and reduced stockouts quarter over quarter.",
-      author: "Director, Merchandising Analytics",
-      role: "Walmart Canada",
-      rating: 5
+      text: 'Delivered measurable impact on inventory accuracy and reduced stockouts quarter over quarter.',
+      author: 'Director, Merchandising Analytics',
+      role: 'Walmart Canada',
+      rating: 5,
     },
     {
-      text: "Automated reporting cut manual effort significantly and improved decision speed across teams.",
-      author: "Senior Manager, Ops Analytics",
-      role: "Logistics Enterprise",
-      rating: 5
+      text: 'Automated reporting cut manual effort significantly and improved decision speed across teams.',
+      author: 'Senior Manager, Ops Analytics',
+      role: 'Logistics Enterprise',
+      rating: 5,
     },
     {
-      text: "Clear communication, strong technical leadership, and a sharp eye for business value.",
-      author: "VP, Data & Insights",
-      role: "SaaS Retail Platform",
-      rating: 5
-    }
-  ];
-
-  const projects = [
-    {
-      title: "ForecastIQ — Demand Forecasting for Retail",
-      description: "Built a demand forecasting platform leveraging gradient-boosted models and LSTM variants to improve store/SKU forecasting accuracy and reduce stockouts.",
-      features: [
-        "+18% MAPE improvement vs baseline",
-        "Automated feature store and retraining",
-        "What-if simulation for promotions/seasonality"
-      ],
-      status: "Driving better inventory and revenue outcomes",
-      gradient: "from-teal-500 to-blue-600"
-    }
+      text: 'Clear communication, strong technical leadership, and a sharp eye for business value.',
+      author: 'VP, Data & Insights',
+      role: 'SaaS Retail Platform',
+      rating: 5,
+    },
   ];
 
   const blogPosts = [
     {
-      title: "Decoding LLM Performance: A Guide to Evaluating LLM Applications",
-      date: "Dec 30, 2023",
-      image: "🔍"
+      title: 'Decoding LLM Performance: A Guide to Evaluating LLM Applications',
+      date: 'Dec 30, 2023',
+      image: '🔍',
     },
     {
-      title: "Harnessing Retrieval Augmented Generation With Langchain",
-      date: "Aug 2, 2023",
-      image: "🧠"
+      title: 'Harnessing Retrieval Augmented Generation With Langchain',
+      date: 'Aug 2, 2023',
+      image: '🧠',
     },
     {
-      title: "Exploring the Creativity of ChatGPT: A Step-by-Step Guide to Using the API",
-      date: "Mar 28, 2023",
-      image: "✨"
-    }
+      title: 'Exploring the Creativity of ChatGPT: A Step-by-Step Guide to Using the API',
+      date: 'Mar 28, 2023',
+      image: '✨',
+    },
   ];
 
   // Contact form state
-  const [form, setForm] = useState({ name: '', email: '', message: '', website: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    message: '',
+    website: '',
+  });
   const [formStatus, setFormStatus] = useState({ state: 'idle', error: '' });
 
   const submitContact = async (e) => {
@@ -118,15 +369,20 @@ const Portfolio = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to send');
       }
-      setForm({ name: '', email: '', message: '' });
+      setForm({ name: '', email: '', message: '', website: '' });
       setFormStatus({ state: 'success', error: '' });
     } catch (err) {
-      setFormStatus({ state: 'error', error: err.message || 'Something went wrong' });
+      setFormStatus({
+        state: 'error',
+        error: err.message || 'Something went wrong',
+      });
     }
   };
 
   const logResume = async () => {
-    try { await fetch('/api/resume'); } catch {}
+    try {
+      await fetch('/api/resume');
+    } catch {}
   };
 
   // Booking state and helpers
@@ -136,7 +392,10 @@ const Portfolio = () => {
   const [selectedDay, setSelectedDay] = useState(null); // 1..n or null
   const [availableSlots, setAvailableSlots] = useState([]);
   const [bookingForm, setBookingForm] = useState({ name: '', email: '' });
-  const [bookingStatus, setBookingStatus] = useState({ state: 'idle', msg: '' });
+  const [bookingStatus, setBookingStatus] = useState({
+    state: 'idle',
+    msg: '',
+  });
 
   const formatDate = (y, m0, d) => {
     const mm = String(m0 + 1).padStart(2, '0');
@@ -171,18 +430,30 @@ const Portfolio = () => {
       const res = await fetch('/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: bookingForm.name, email: bookingForm.email, date: dateStr, time })
+        body: JSON.stringify({
+          name: bookingForm.name,
+          email: bookingForm.email,
+          date: dateStr,
+          time,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 409) throw new Error('This slot was just booked. Pick another.');
+        if (res.status === 409)
+          throw new Error('This slot was just booked. Pick another.');
         throw new Error(data.error || 'Booking failed');
       }
-      setBookingStatus({ state: 'success', msg: 'Booked! Check your email for confirmation.' });
+      setBookingStatus({
+        state: 'success',
+        msg: 'Booked! Check your email for confirmation.',
+      });
       // Refresh availability to remove the booked slot
       fetchAvailability(currentYear, currentMonth, selectedDay);
     } catch (e) {
-      setBookingStatus({ state: 'error', msg: e.message || 'Booking failed' });
+      setBookingStatus({
+        state: 'error',
+        msg: e.message || 'Booking failed',
+      });
     }
   };
 
@@ -195,18 +466,20 @@ const Portfolio = () => {
             <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Shubham Banger
             </div>
-            
+
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
-              {['Home', 'About', 'Work', 'Experience', 'Process', 'FAQ', 'Contact'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => scrollToSection(item.toLowerCase())}
-                  className="text-gray-700 hover:text-purple-600 transition-colors duration-200"
-                >
-                  {item}
-                </button>
-              ))}
+              {['Home', 'About', 'Work', 'Experience', 'Process', 'FAQ', 'Contact'].map(
+                (item) => (
+                  <button
+                    key={item}
+                    onClick={() => scrollToSection(item.toLowerCase())}
+                    className="text-gray-700 hover:text-purple-600 transition-colors duration-200"
+                  >
+                    {item}
+                  </button>
+                )
+              )}
               <button className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors duration-200">
                 Start Project
               </button>
@@ -222,17 +495,19 @@ const Portfolio = () => {
           </div>
 
           {/* Mobile Menu */}
-            {isMenuOpen && (
+          {isMenuOpen && (
             <div className="md:hidden mt-4 pb-4 border-t border-purple-100">
-              {['Home', 'About', 'Work', 'Experience', 'Process', 'FAQ', 'Contact'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => scrollToSection(item.toLowerCase())}
-                  className="block w-full text-left py-2 text-gray-700 hover:text-purple-600"
-                >
-                  {item}
-                </button>
-              ))}
+              {['Home', 'About', 'Work', 'Experience', 'Process', 'FAQ', 'Contact'].map(
+                (item) => (
+                  <button
+                    key={item}
+                    onClick={() => scrollToSection(item.toLowerCase())}
+                    className="block w-full text-left py-2 text-gray-700 hover:text-purple-600"
+                  >
+                    {item}
+                  </button>
+                )
+              )}
               <button className="w-full mt-2 bg-blue-500 text-white py-2 rounded-full">
                 Start Project
               </button>
@@ -247,9 +522,11 @@ const Portfolio = () => {
           <div className="inline-block bg-blue-100 text-blue-800 px-4 py-2 rounded-full mb-8 animate-pulse">
             ⭐ Data Science Manager
           </div>
-          
+
           <h1 className="text-6xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent leading-tight">
-            Turning complex data into<br />actionable business decisions
+            Turning complex data into
+            <br />
+            actionable business decisions
           </h1>
 
           {/* Data-focused decorative avatar */}
@@ -259,9 +536,9 @@ const Portfolio = () => {
           </div>
 
           <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Data-driven leader with deep expertise in analytics, retail, eCommerce, and customer insights.
-            I build predictive solutions and scalable data products that improve operations, grow revenue,
-            and elevate customer experience.
+            Data-driven leader with deep expertise in analytics, retail, eCommerce, and
+            customer insights. I build predictive solutions and scalable data products that
+            improve operations, grow revenue, and elevate customer experience.
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-10">
@@ -280,8 +557,10 @@ const Portfolio = () => {
             </a>
           </div>
 
-          <ChevronDown className="mx-auto text-gray-400 animate-bounce cursor-pointer hover:text-purple-600"
-                       onClick={() => scrollToSection('tools')} />
+          <ChevronDown
+            className="mx-auto text-gray-400 animate-bounce cursor-pointer hover:text-purple-600"
+            onClick={() => scrollToSection('tools')}
+          />
         </div>
       </section>
 
@@ -290,13 +569,16 @@ const Portfolio = () => {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl font-bold mb-6">About</h2>
           <p className="text-lg text-gray-700 leading-relaxed mb-6">
-            As a data-driven decision-maker, I connect the dots across data to craft strategic
-            solutions that enhance operations, boost revenue, and improve customer satisfaction.
-            With a strong foundation in machine learning and predictive analytics, I turn complex
-            datasets into actionable insights that drive growth and optimize performance.
+            As a data-driven decision-maker, I connect the dots across data to craft
+            strategic solutions that enhance operations, boost revenue, and improve customer
+            satisfaction. With a strong foundation in machine learning and predictive
+            analytics, I turn complex datasets into actionable insights that drive growth
+            and optimize performance.
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-700">
-            <li>Extensive experience in analytics, retail, eCommerce, and customer insights</li>
+            <li>
+              Extensive experience in analytics, retail, eCommerce, and customer insights
+            </li>
             <li>Expertise in predictive modeling, forecasting, and advanced analytics</li>
             <li>Skilled at automating reporting and building scalable ML pipelines</li>
             <li>Focused on customer behavior, lifecycle strategy, and CX optimization</li>
@@ -308,7 +590,7 @@ const Portfolio = () => {
       <section id="tools" className="py-16 px-6">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-gray-500 mb-8">Tools I use on a daily basis</p>
-          
+
           {/* Flowing yellow border container */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 rounded-full opacity-60 animate-pulse"></div>
@@ -334,89 +616,65 @@ const Portfolio = () => {
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-6">Explore My Projects</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              My work is a blend of innovative thinking and practical solutions, embodying creativity and pragmatism.
+              Real-world forecasting and optimization systems that blend innovative thinking
+              with practical impact — from workforce planning to SKU-level supply chain
+              decisions.
             </p>
           </div>
 
           {/* Project Cards Grid */}
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Project 1 - ForecastIQ */}
-            <div className="group relative bg-gradient-to-br from-teal-500 to-blue-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-3xl">📊</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">ForecastIQ</h3>
-                <p className="text-white/90 mb-6">Demand Forecasting Platform with ML-powered predictions reducing stockouts by 18%</p>
-                <div className="flex items-center text-white/80">
-                  <span className="text-sm">View Project</span>
-                  <ArrowRight className="ml-2" size={16} />
-                </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
-            </div>
-
-            {/* Project 2 - Customer360 */}
-            <div className="group relative bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-3xl">👥</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">Customer360</h3>
-                <p className="text-white/90 mb-6">Unified customer data platform with real-time analytics and lifecycle insights</p>
-                <div className="flex items-center text-white/80">
-                  <span className="text-sm">View Project</span>
-                  <ArrowRight className="ml-2" size={16} />
-                </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
-            </div>
-
-            {/* Project 3 - AutoReport */}
-            <div className="group relative bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-3xl">🤖</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">AutoReport</h3>
-                <p className="text-white/90 mb-6">Automated reporting system saving 30+ hours weekly with intelligent insights</p>
-                <div className="flex items-center text-white/80">
-                  <span className="text-sm">View Project</span>
-                  <ArrowRight className="ml-2" size={16} />
-                </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
-            </div>
-
-            {/* Project 4 - SupplyChainAI */}
-            <div className="group relative bg-gradient-to-br from-green-500 to-teal-600 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="text-3xl">🚚</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">SupplyChainAI</h3>
-                <p className="text-white/90 mb-6">End-to-end supply chain optimization with predictive analytics and routing</p>
-                <div className="flex items-center text-white/80">
-                  <span className="text-sm">View Project</span>
-                  <ArrowRight className="ml-2" size={16} />
-                </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
-            </div>
+            {projectDetails.map((project) => {
+              const Icon = project.icon;
+              return (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => setActiveProject(project)}
+                  className={`group relative bg-gradient-to-br ${project.gradient} rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 text-left`}
+                >
+                  <div className="p-8">
+                    <div className="w-20 h-20 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon className="text-white h-8 w-8" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3">
+                      {project.title}
+                    </h3>
+                    <p className="text-white/90 text-sm mb-3">
+                      {project.shortTagline}
+                    </p>
+                    <p className="text-sky-50/90 text-sm mb-6">
+                      {project.shortImpact}
+                    </p>
+                    <div className="flex items-center text-white/80">
+                      <span className="text-sm">View Case Study</span>
+                      <ArrowRight className="ml-2" size={16} />
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full"></div>
+                  <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 rounded-full"></div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
+      {/* Case Study Modal */}
+      <ProjectModal
+        project={activeProject}
+        onClose={() => setActiveProject(null)}
+      />
+
       {/* Testimonials */}
       <section className="py-20 px-6 bg-white/50">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-5xl font-bold text-center mb-4">Trusted by Professionals</h2>
+          <h2 className="text-5xl font-bold text-center mb-4">
+            Trusted by Professionals
+          </h2>
           <p className="text-center text-gray-600 mb-16">
-            While most of my client reviews are NDA-protected, I managed to sneak in a few favorites from my previous partners.
+            While most of my client reviews are NDA-protected, I managed to sneak in a few
+            favorites from my previous partners.
           </p>
 
           {/* Flowing yellow border */}
@@ -428,18 +686,29 @@ const Portfolio = () => {
                   <div key={index} className="bg-white/70 rounded-2xl p-6">
                     <div className="flex mb-4">
                       {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="text-yellow-400 fill-current" size={20} />
+                        <Star
+                          key={i}
+                          className="text-yellow-400 fill-current"
+                          size={20}
+                        />
                       ))}
                     </div>
-                    <p className="text-gray-700 mb-6 leading-relaxed">{testimonial.text}</p>
+                    <p className="text-gray-700 mb-6 leading-relaxed">
+                      {testimonial.text}
+                    </p>
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center mr-3">
                         <span className="text-purple-600 font-bold">
-                          {testimonial.author.split(' ').map(n => n[0]).join('')}
+                          {testimonial.author
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}
                         </span>
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800">{testimonial.author}</p>
+                        <p className="font-semibold text-gray-800">
+                          {testimonial.author}
+                        </p>
                         <p className="text-sm text-gray-500">{testimonial.role}</p>
                       </div>
                     </div>
@@ -452,13 +721,18 @@ const Portfolio = () => {
       </section>
 
       {/* Process Section */}
+      {/* ... everything below this stays exactly as you had it ... */}
+      {/* I’m leaving the rest of your file untouched for brevity */}
+
+      {/* Process Section */}
       <section id="process" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-6">Process</h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              My structured approach to building exceptional AI solutions. From exploration to execution, 
-              this framework brings AI vision to life — strategic, focused, and built for real-world success.
+              My structured approach to building exceptional AI solutions. From exploration
+              to execution, this framework brings AI vision to life — strategic, focused,
+              and built for real-world success.
             </p>
           </div>
 
@@ -467,22 +741,28 @@ const Portfolio = () => {
               <div className="relative z-10">
                 <h3 className="text-2xl font-bold text-blue-800 mb-4">Discover</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Uncover the real opportunity through deep discovery — identifying pain points, inefficiencies, 
-                  and untapped leverage where AI can create the most impact and value for your business.
+                  Uncover the real opportunity through deep discovery — identifying pain
+                  points, inefficiencies, and untapped leverage where AI can create the most
+                  impact and value for your business.
                 </p>
               </div>
-              <div className="absolute -bottom-10 -right-10 text-8xl font-bold text-blue-100">01</div>
+              <div className="absolute -bottom-10 -right-10 text-8xl font-bold text-blue-100">
+                01
+              </div>
             </div>
 
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 relative overflow-hidden">
               <div className="relative z-10">
                 <h3 className="text-2xl font-bold text-purple-800 mb-4">Design</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Architect intelligent systems with intention — defining agent workflows, selecting optimal tools, 
-                  and mapping a scalable architecture tailored for impact, autonomy, and utility.
+                  Architect intelligent systems with intention — defining agent workflows,
+                  selecting optimal tools, and mapping a scalable architecture tailored for
+                  impact, autonomy, and utility.
                 </p>
               </div>
-              <div className="absolute -bottom-10 -right-10 text-8xl font-bold text-purple-100">02</div>
+              <div className="absolute -bottom-10 -right-10 text-8xl font-bold text-purple-100">
+                02
+              </div>
             </div>
           </div>
         </div>
@@ -502,7 +782,9 @@ const Portfolio = () => {
                   {skill}
                 </span>
               ))}
-              <span className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl">+ More</span>
+              <span className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl">
+                + More
+              </span>
             </div>
           </div>
         </div>
@@ -514,7 +796,10 @@ const Portfolio = () => {
           <h2 className="text-4xl font-bold mb-12">Experience</h2>
           <div className="space-y-8">
             {experiences.map((exp, index) => (
-              <div key={index} className="flex justify-between items-center border-b border-gray-200 pb-6">
+              <div
+                key={index}
+                className="flex justify-between items-center border-b border-gray-200 pb-6"
+              >
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800">{exp.role}</h3>
                 </div>
@@ -534,7 +819,9 @@ const Portfolio = () => {
           <h2 className="text-4xl font-bold mb-12">Education</h2>
           <div className="flex justify-between items-center border-b border-gray-200 pb-6">
             <div>
-              <h3 className="text-xl font-semibold text-gray-800">University of Toronto</h3>
+              <h3 className="text-xl font-semibold text-gray-800">
+                University of Toronto
+              </h3>
               <p className="text-gray-600">Data Science</p>
             </div>
             <div className="text-right">
@@ -550,13 +837,18 @@ const Portfolio = () => {
           <h2 className="text-4xl font-bold mb-12">Blog</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {blogPosts.map((post, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+              <div
+                key={index}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200"
+              >
                 <div className="h-48 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
                   <span className="text-6xl">{post.image}</span>
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-                  <h3 className="text-lg font-semibold text-gray-800 leading-tight">{post.title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 leading-tight">
+                    {post.title}
+                  </h3>
                 </div>
               </div>
             ))}
@@ -570,18 +862,20 @@ const Portfolio = () => {
           <h2 className="text-5xl font-bold text-center mb-16">
             Relied upon by a Fresh Generation of Companies
           </h2>
-          
+
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="text-6xl font-bold text-purple-600 mb-4">87%</div>
               <p className="text-gray-600">Reduction in human agent handoffs</p>
             </div>
-            
+
             <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl p-8 text-white">
               <div className="h-32 mb-4 bg-white/10 rounded-2xl flex items-center justify-center">
                 <span className="text-4xl">🤖</span>
               </div>
-              <p className="text-sm opacity-90">"AI is going to be the new Customer Interface"</p>
+              <p className="text-sm opacity-90">
+                "AI is going to be the new Customer Interface"
+              </p>
               <div className="flex items-center mt-4">
                 <div className="w-8 h-8 bg-white/20 rounded-full mr-2"></div>
                 <div>
@@ -590,12 +884,15 @@ const Portfolio = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-blue-100 rounded-3xl p-8 text-center">
               <div className="text-4xl mb-4">🚀</div>
-              <p className="text-blue-800 font-medium">Embrace the power of Artificial Intelligence and witness seamless growth like never before.</p>
+              <p className="text-blue-800 font-medium">
+                Embrace the power of Artificial Intelligence and witness seamless growth
+                like never before.
+              </p>
             </div>
-            
+
             <div className="text-center">
               <div className="text-6xl font-bold text-purple-600 mb-4">7x</div>
               <p className="text-gray-600">Faster Software Development</p>
@@ -607,32 +904,41 @@ const Portfolio = () => {
       {/* FAQ Section */}
       <section id="faq" className="py-20 px-6 bg-white/30">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-16">Common Queries Answered</h2>
-          
+          <h2 className="text-4xl font-bold text-center mb-16">
+            Common Queries Answered
+          </h2>
+
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-6">
               <div className="flex justify-between items-center cursor-pointer">
-                <h3 className="text-lg font-semibold">How do you approach building AI solutions?</h3>
+                <h3 className="text-lg font-semibold">
+                  How do you approach building AI solutions?
+                </h3>
                 <ChevronDown />
               </div>
               <div className="mt-4 text-gray-600 leading-relaxed">
-                Every project begins with deep discovery — understanding the real-world problem, data landscape, and desired 
-                business impact. From there, I design and validate the right architecture (agentic or otherwise), select tools 
-                aligned with your goals, and rapidly prototype for early feedback. I prioritize clarity, autonomy, and measurable 
-                utility at each stage.
+                Every project begins with deep discovery — understanding the real-world
+                problem, data landscape, and desired business impact. From there, I design
+                and validate the right architecture (agentic or otherwise), select tools
+                aligned with your goals, and rapidly prototype for early feedback. I
+                prioritize clarity, autonomy, and measurable utility at each stage.
               </div>
             </div>
-            
+
             <div className="bg-white rounded-2xl p-6">
               <div className="flex justify-between items-center cursor-pointer">
-                <h3 className="text-lg font-semibold">What tools and frameworks do you use for AI engineering?</h3>
+                <h3 className="text-lg font-semibold">
+                  What tools and frameworks do you use for AI engineering?
+                </h3>
                 <ChevronDown />
               </div>
             </div>
-            
+
             <div className="bg-white rounded-2xl p-6">
               <div className="flex justify-between items-center cursor-pointer">
-                <h3 className="text-lg font-semibold">How do you measure the success of your AI solutions?</h3>
+                <h3 className="text-lg font-semibold">
+                  How do you measure the success of your AI solutions?
+                </h3>
                 <ChevronDown />
               </div>
             </div>
@@ -645,16 +951,16 @@ const Portfolio = () => {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h2 className="text-5xl font-bold mb-8">
-              Schedule a free<br />Discovery call 📞
+              Schedule a free
+              <br />
+              Discovery call 📞
             </h2>
             <p className="text-xl text-gray-600 mb-4">
               Looking to start a project or just need some AI advice?
             </p>
-            <p className="text-xl text-gray-600">
-              Let's chat!
-            </p>
+            <p className="text-xl text-gray-600">Let's chat!</p>
           </div>
-          
+
           <div className="bg-gray-900 rounded-3xl p-8 text-white">
             <div className="flex items-center mb-6">
               <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mr-4">
@@ -665,108 +971,130 @@ const Portfolio = () => {
                 <p className="text-gray-300">20m • Google Meet • Asia/Kolkata</p>
               </div>
             </div>
-            
-          <div className="bg-gray-800 rounded-2xl p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-semibold">
-                {new Date(currentYear, currentMonth, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' })}
-              </h4>
-              <div className="flex space-x-2">
-                <button
-                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center"
-                  onClick={() => {
-                    const prev = new Date(currentYear, currentMonth - 1, 1);
-                    setCurrentYear(prev.getFullYear());
-                    setCurrentMonth(prev.getMonth());
-                    setSelectedDay(null);
-                    setAvailableSlots([]);
-                    setBookingStatus({ state: 'idle', msg: '' });
-                  }}
-                >
-                  &lt;
-                </button>
-                <button
-                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center"
-                  onClick={() => {
-                    const next = new Date(currentYear, currentMonth + 1, 1);
-                    setCurrentYear(next.getFullYear());
-                    setCurrentMonth(next.getMonth());
-                    setSelectedDay(null);
-                    setAvailableSlots([]);
-                    setBookingStatus({ state: 'idle', msg: '' });
-                  }}
-                >
-                  &gt;
-                </button>
+
+            <div className="bg-gray-800 rounded-2xl p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-semibold">
+                  {new Date(
+                    currentYear,
+                    currentMonth,
+                    1
+                  ).toLocaleString(undefined, {
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </h4>
+                <div className="flex space-x-2">
+                  <button
+                    className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center"
+                    onClick={() => {
+                      const prev = new Date(currentYear, currentMonth - 1, 1);
+                      setCurrentYear(prev.getFullYear());
+                      setCurrentMonth(prev.getMonth());
+                      setSelectedDay(null);
+                      setAvailableSlots([]);
+                      setBookingStatus({ state: 'idle', msg: '' });
+                    }}
+                  >
+                    &lt;
+                  </button>
+                  <button
+                    className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center"
+                    onClick={() => {
+                      const next = new Date(currentYear, currentMonth + 1, 1);
+                      setCurrentYear(next.getFullYear());
+                      setCurrentMonth(next.getMonth());
+                      setSelectedDay(null);
+                      setAvailableSlots([]);
+                      setBookingStatus({ state: 'idle', msg: '' });
+                    }}
+                  >
+                    &gt;
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-7 gap-2 text-sm">
-              {['S','M','T','W','T','F','S'].map((d) => (
-                <div key={d} className="text-gray-400 text-center">{d}</div>
-              ))}
+              <div className="grid grid-cols-7 gap-2 text-sm">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
+                  <div key={d} className="text-gray-400 text-center">
+                    {d}
+                  </div>
+                ))}
 
-              {Array.from({ length: daysInMonth(currentYear, currentMonth) }, (_, i) => i + 1).map((day) => (
-                <button
-                  key={day}
-                  onClick={() => {
-                    setSelectedDay(day);
-                    setBookingStatus({ state: 'idle', msg: '' });
-                    fetchAvailability(currentYear, currentMonth, day);
-                  }}
-                  className={`h-8 rounded text-center hover:bg-gray-700 ${
-                    selectedDay === day ? 'bg-white text-black' : ''
-                  }`}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
+                {Array.from(
+                  { length: daysInMonth(currentYear, currentMonth) },
+                  (_, i) => i + 1
+                ).map((day) => (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      setSelectedDay(day);
+                      setBookingStatus({ state: 'idle', msg: '' });
+                      fetchAvailability(currentYear, currentMonth, day);
+                    }}
+                    className={`h-8 rounded text-center hover:bg-gray-700 ${
+                      selectedDay === day ? 'bg-white text-black' : ''
+                    }`}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
 
-            {/* Slot picker */}
-            {selectedDay && (
-              <div className="mt-4">
-                <div className="text-sm text-gray-300 mb-2">Available slots</div>
-                <div className="flex flex-wrap gap-2">
-                  {availableSlots.length === 0 && (
-                    <div className="text-gray-400 text-sm">No slots available for this day.</div>
+              {/* Slot picker */}
+              {selectedDay && (
+                <div className="mt-4">
+                  <div className="text-sm text-gray-300 mb-2">Available slots</div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSlots.length === 0 && (
+                      <div className="text-gray-400 text-sm">
+                        No slots available for this day.
+                      </div>
+                    )}
+                    {availableSlots.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => bookSlot(t)}
+                        className="px-3 py-1 rounded-full bg-white text-gray-900 hover:bg-gray-100"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Booking form */}
+                  <div className="mt-4 grid md:grid-cols-2 gap-3">
+                    <input
+                      placeholder="Your name (optional)"
+                      value={bookingForm.name}
+                      onChange={(e) =>
+                        setBookingForm((f) => ({ ...f, name: e.target.value }))
+                      }
+                      className="w-full border border-gray-700 bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      placeholder="Your email *"
+                      type="email"
+                      value={bookingForm.email}
+                      onChange={(e) =>
+                        setBookingForm((f) => ({ ...f, email: e.target.value }))
+                      }
+                      className="w-full border border-gray-700 bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {bookingStatus.state === 'error' && (
+                    <div className="mt-2 text-sm text-red-400">
+                      {bookingStatus.msg}
+                    </div>
                   )}
-                  {availableSlots.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => bookSlot(t)}
-                      className="px-3 py-1 rounded-full bg-white text-gray-900 hover:bg-gray-100"
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {bookingStatus.state === 'success' && (
+                    <div className="mt-2 text-sm text-green-400">
+                      {bookingStatus.msg}
+                    </div>
+                  )}
                 </div>
-
-                {/* Booking form */}
-                <div className="mt-4 grid md:grid-cols-2 gap-3">
-                  <input
-                    placeholder="Your name (optional)"
-                    value={bookingForm.name}
-                    onChange={(e)=>setBookingForm(f=>({...f,name:e.target.value}))}
-                    className="w-full border border-gray-700 bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    placeholder="Your email *"
-                    type="email"
-                    value={bookingForm.email}
-                    onChange={(e)=>setBookingForm(f=>({...f,email:e.target.value}))}
-                    className="w-full border border-gray-700 bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                {bookingStatus.state==='error' && (
-                  <div className="mt-2 text-sm text-red-400">{bookingStatus.msg}</div>
-                )}
-                {bookingStatus.state==='success' && (
-                  <div className="mt-2 text-sm text-green-400">{bookingStatus.msg}</div>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -777,7 +1105,9 @@ const Portfolio = () => {
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-12 text-white relative overflow-hidden">
             <div className="relative z-10">
               <h2 className="text-4xl font-bold mb-6">
-                Ready to transform your<br />business with AI?
+                Ready to transform your
+                <br />
+                business with AI?
               </h2>
               <p className="text-xl mb-8 opacity-90">
                 Let's bring your vision to life!
@@ -796,38 +1126,101 @@ const Portfolio = () => {
       <section id="contact" className="py-20 px-6 bg-white/50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Contact</h2>
-          <p className="text-gray-600 mb-8">Open to opportunities, collaborations, and conversations.</p>
-          <form onSubmit={submitContact} className="max-w-xl mx-auto text-left bg-white rounded-2xl shadow p-6">
+          <p className="text-gray-600 mb-8">
+            Open to opportunities, collaborations, and conversations.
+          </p>
+          <form
+            onSubmit={submitContact}
+            className="max-w-xl mx-auto text-left bg-white rounded-2xl shadow p-6"
+          >
             <div className="grid gap-4">
               {/* Honeypot field */}
-              <input tabIndex={-1} autoComplete="off" value={form.website} onChange={(e)=>setForm(f=>({...f,website:e.target.value}))} className="hidden" placeholder="Your website" />
+              <input
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, website: e.target.value }))
+                }
+                className="hidden"
+                placeholder="Your website"
+              />
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Name</label>
-                <input value={form.name} onChange={(e)=>setForm(f=>({...f,name:e.target.value}))} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Your name" />
+                <input
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Your name"
+                />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Email *</label>
-                <input type="email" required value={form.email} onChange={(e)=>setForm(f=>({...f,email:e.target.value}))} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="you@example.com" />
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="you@example.com"
+                />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Message *</label>
-                <textarea required rows={4} value={form.message} onChange={(e)=>setForm(f=>({...f,message:e.target.value}))} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="How can I help?" />
+                <label className="block text-sm text-gray-600 mb-1">
+                  Message *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={form.message}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, message: e.target.value }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="How can I help?"
+                />
               </div>
-              <button disabled={formStatus.state==='loading'} className="bg-teal-600 text-white px-6 py-3 rounded-full hover:bg-teal-700 transition disabled:opacity-60">
-                {formStatus.state==='loading' ? 'Sending…' : 'Send Message'}
+              <button
+                disabled={formStatus.state === 'loading'}
+                className="bg-teal-600 text-white px-6 py-3 rounded-full hover:bg-teal-700 transition disabled:opacity-60"
+              >
+                {formStatus.state === 'loading' ? 'Sending…' : 'Send Message'}
               </button>
-              {formStatus.state==='success' && <div className="text-green-700 text-sm">Thanks! I’ll get back to you soon.</div>}
-              {formStatus.state==='error' && <div className="text-red-600 text-sm">{formStatus.error}</div>}
+              {formStatus.state === 'success' && (
+                <div className="text-green-700 text-sm">
+                  Thanks! I’ll get back to you soon.
+                </div>
+              )}
+              {formStatus.state === 'error' && (
+                <div className="text-red-600 text-sm">{formStatus.error}</div>
+              )}
             </div>
           </form>
           <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
-            <a href={`mailto:${contact.email}`} className="inline-flex items-center justify-center gap-2 text-teal-700 hover:text-teal-800">
+            <a
+              href={`mailto:${contact.email}`}
+              className="inline-flex items-center justify-center gap-2 text-teal-700 hover:text-teal-800"
+            >
               <Mail size={18} /> Email Directly
             </a>
-            <a href={contact.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 text-blue-700 hover:text-blue-800">
+            <a
+              href={contact.linkedin}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 text-blue-700 hover:text-blue-800"
+            >
               <Linkedin size={18} /> LinkedIn
             </a>
-            <a href={contact.github} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 text-gray-800 hover:text-black">
+            <a
+              href={contact.github}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 text-gray-800 hover:text-black"
+            >
               <Github size={18} /> GitHub
             </a>
           </div>
@@ -838,11 +1231,32 @@ const Portfolio = () => {
       <footer className="py-12 px-6 border-top border-gray-200">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-gray-600">© {new Date().getFullYear()} Shubham Banger</div>
+            <div className="text-gray-600">
+              © {new Date().getFullYear()} Shubham Banger
+            </div>
             <div className="flex items-center gap-6">
-              <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-gray-700 hover:text-teal-700"><Mail size={18} /> Email</a>
-              <a href={contact.github} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-700 hover:text-gray-900"><Github size={18} /> GitHub</a>
-              <a href={contact.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-700 hover:text-blue-700"><Linkedin size={18} /> LinkedIn</a>
+              <a
+                href={`mailto:${contact.email}`}
+                className="flex items-center gap-2 text-gray-700 hover:text-teal-700"
+              >
+                <Mail size={18} /> Email
+              </a>
+              <a
+                href={contact.github}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
+              >
+                <Github size={18} /> GitHub
+              </a>
+              <a
+                href={contact.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-700"
+              >
+                <Linkedin size={18} /> LinkedIn
+              </a>
             </div>
           </div>
         </div>
