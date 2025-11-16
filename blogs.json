@@ -1,0 +1,27 @@
+[
+    {
+      "id": "decoding-llm-performance",
+      "title": "Decoding LLM Performance: A Guide to Evaluating LLM Applications",
+      "date": "2025-08-08",
+      "emoji": "🔍",
+      "excerpt": "A practical guide to evaluation metrics, test sets, and monitoring for LLM-based products.",
+      "url": "https://www.bentoml.com/blog/3x-faster-llm-inference-with-speculative-decoding"
+    },
+    {
+      "id": "rag-with-langchain",
+      "title": "Harnessing Retrieval Augmented Generation With Langchain",
+      "date": "2023-08-02",
+      "emoji": "🧠",
+      "excerpt": "How to design, evaluate, and productionize RAG systems using LangChain.",
+      "url": "https://medium.com/better-programming/harnessing-retrieval-augmented-generation-with-langchain-2eae65926e82"
+    },
+    {
+      "id": "chatgpt-creativity-guide",
+      "title": "Exploring the Creativity of ChatGPT: A Step-by-Step Guide to Using the API",
+      "date": "2023-03-28",
+      "emoji": "✨",
+      "excerpt": "From prompts to prototypes: building creative applications on top of ChatGPT.",
+      "url": "https://levelup.gitconnected.com/exploring-the-limitless-imagination-of-chatgpt-a-step-by-step-guide-to-using-the-api-643200753c6"
+    }
+  ]
+  

@@ -232,7 +232,10 @@ const Portfolio = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('home');
   const [activeProject, setActiveProject] = useState(null);
-  // Removed voice recording UI for a cleaner data-focused hero
+
+  // 🆕 Blog state
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [blogStatus, setBlogStatus] = useState('loading'); // 'loading' | 'ok' | 'error'
 
   // Smooth scroll animation
   const scrollToSection = (sectionId) => {
@@ -244,7 +247,7 @@ const Portfolio = () => {
   // Contact links (update with your real links)
   const contact = {
     email: 'shubham.banger@example.com',
-    linkedin: 'https://www.linkedin.com/in/shubham-banger',
+    linkedin: 'https://www.linkedin.com/in/shubham-banger-8382999b/',
     github: 'https://github.com/shubhambanger',
   };
 
@@ -329,23 +332,22 @@ const Portfolio = () => {
     },
   ];
 
-  const blogPosts = [
-    {
-      title: 'Decoding LLM Performance: A Guide to Evaluating LLM Applications',
-      date: 'Dec 30, 2023',
-      image: '🔍',
-    },
-    {
-      title: 'Harnessing Retrieval Augmented Generation With Langchain',
-      date: 'Aug 2, 2023',
-      image: '🧠',
-    },
-    {
-      title: 'Exploring the Creativity of ChatGPT: A Step-by-Step Guide to Using the API',
-      date: 'Mar 28, 2023',
-      image: '✨',
-    },
-  ];
+  // 🆕 Fetch blogs from backend
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await fetch('/api/blogs');
+        if (!res.ok) throw new Error('Failed to fetch blogs');
+        const data = await res.json();
+        setBlogPosts((data && data.blogs) || []);
+        setBlogStatus('ok');
+      } catch (err) {
+        console.error(err);
+        setBlogStatus('error');
+      }
+    };
+    fetchBlogs();
+  }, []);
 
   // Contact form state
   const [form, setForm] = useState({
@@ -480,9 +482,9 @@ const Portfolio = () => {
                   </button>
                 )
               )}
-              <button className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors duration-200">
+              {/* <button className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors duration-200">
                 Start Project
-              </button>
+              </button> */}
             </div>
 
             {/* Mobile Menu Button */}
@@ -508,9 +510,9 @@ const Portfolio = () => {
                   </button>
                 )
               )}
-              <button className="w-full mt-2 bg-blue-500 text-white py-2 rounded-full">
+              {/* <button className="w-full mt-2 bg-blue-500 text-white py-2 rounded-full">
                 Start Project
-              </button>
+              </button> */}
             </div>
           )}
         </div>
@@ -548,13 +550,13 @@ const Portfolio = () => {
             >
               Contact
             </button>
-            <a
+            {/* <a
               href="/Shubham_Banger_Resume.pdf"
               onClick={logResume}
               className="px-6 py-3 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
             >
               View Resume
-            </a>
+            </a> */}
           </div>
 
           <ChevronDown
@@ -721,10 +723,6 @@ const Portfolio = () => {
       </section>
 
       {/* Process Section */}
-      {/* ... everything below this stays exactly as you had it ... */}
-      {/* I’m leaving the rest of your file untouched for brevity */}
-
-      {/* Process Section */}
       <section id="process" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -782,9 +780,6 @@ const Portfolio = () => {
                   {skill}
                 </span>
               ))}
-              <span className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl">
-                + More
-              </span>
             </div>
           </div>
         </div>
@@ -831,28 +826,76 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Blog Section */}
+      {/* Blog Section – now dynamic via /api/blogs */}
       <section className="py-20 px-6 bg-white/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold mb-12">Blog</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {blogPosts.map((post, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200"
-              >
-                <div className="h-48 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-                  <span className="text-6xl">{post.image}</span>
-                </div>
-                <div className="p-6">
-                  <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-                  <h3 className="text-lg font-semibold text-gray-800 leading-tight">
-                    {post.title}
-                  </h3>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {blogStatus === 'loading' && (
+            <p className="text-gray-500">Loading blog posts…</p>
+          )}
+
+          {blogStatus === 'error' && (
+            <p className="text-red-500 text-sm">
+              Couldn&apos;t load blog posts right now.
+            </p>
+          )}
+
+          {blogStatus === 'ok' && blogPosts.length === 0 && (
+            <p className="text-gray-500">No blog posts published yet.</p>
+          )}
+
+          {blogPosts.length > 0 && (
+            <div className="grid md:grid-cols-3 gap-8">
+              {blogPosts.map((post, index) => {
+                const dateLabel = post.date
+                  ? new Date(post.date).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : '';
+
+                const CardComponent = post.url ? 'a' : 'div';
+                const cardProps = post.url
+                  ? {
+                      href: post.url,
+                      target: '_blank',
+                      rel: 'noreferrer',
+                    }
+                  : {};
+
+                return (
+                  <CardComponent
+                    key={post.id || index}
+                    {...cardProps}
+                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200 block"
+                  >
+                    <div className="h-48 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                      <span className="text-6xl">
+                        {post.emoji || '📝'}
+                      </span>
+                    </div>
+                    <div className="p-6">
+                      {dateLabel && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          {dateLabel}
+                        </p>
+                      )}
+                      <h3 className="text-lg font-semibold text-gray-800 leading-tight">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="mt-2 text-sm text-gray-600 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                      )}
+                    </div>
+                  </CardComponent>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -902,7 +945,7 @@ const Portfolio = () => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 px-6 bg-white/30">
+      {/* <section id="faq" className="py-20 px-6 bg-white/30">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-16">
             Common Queries Answered
@@ -944,7 +987,7 @@ const Portfolio = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Schedule Section */}
       <section className="py-20 px-6">
@@ -1112,9 +1155,9 @@ const Portfolio = () => {
               <p className="text-xl mb-8 opacity-90">
                 Let's bring your vision to life!
               </p>
-              <button className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-200">
+              {/* <button className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-200">
                 Start a Project
-              </button>
+              </button> */}
             </div>
             <div className="absolute -top-20 -left-20 w-60 h-60 bg-white/10 rounded-full"></div>
             <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-white/10 rounded-full"></div>

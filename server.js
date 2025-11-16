@@ -9,6 +9,8 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 
+const fsp = fs.promises; // for async blog helpers
+
 // ----------------------
 // ✅ Google OAuth Setup
 // ----------------------
@@ -39,6 +41,7 @@ function getOAuthClient() {
 const messagesFile = path.resolve(process.cwd(), 'messages.json');
 const bookingsFile = path.resolve(process.cwd(), 'bookings.json');
 const resumeLogsFile = path.resolve(process.cwd(), 'resume-logs.json');
+const blogsFile = path.resolve(process.cwd(), 'blogs.json'); // 🆕 blog storage
 
 const app = express();
 const port = process.env.PORT || 5174;
@@ -235,6 +238,26 @@ function writeJsonSafe(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+// 🆕 Blog helpers
+async function loadBlogs() {
+  try {
+    const raw = await fsp.readFile(blogsFile, 'utf-8');
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    console.error('Error reading blogs.json', err);
+    return [];
+  }
+}
+
+async function saveBlogs(blogs) {
+  try {
+    await fsp.writeFile(blogsFile, JSON.stringify(blogs, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing blogs.json', err);
+  }
+}
+
 function generateSlotsForDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   if (!y || !m || !d) return [];
@@ -276,6 +299,48 @@ app.get('/api/availability', (req, res) => {
     endHour: END_HOUR, 
     available 
   });
+});
+
+// ----------------------
+// 🆕 Blogs Endpoints
+// ----------------------
+
+// Public: list blogs
+app.get('/api/blogs', async (req, res) => {
+  const blogs = await loadBlogs();
+  blogs.sort((a, b) => new Date(b.date) - new Date(a.date)); // newest first
+  res.json({ blogs });
+});
+
+// Admin: upsert blog (create or update by id)
+app.post('/api/admin/blogs', async (req, res) => {
+  const authToken = req.headers.authorization;
+  if (authToken !== `Bearer ${process.env.ADMIN_TOKEN}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { id, title, date, emoji, excerpt, url } = req.body || {};
+  if (!id || !title || !date) {
+    return res.status(400).json({ error: 'id, title and date are required' });
+  }
+
+  const blogs = await loadBlogs();
+  const idx = blogs.findIndex((b) => b.id === id);
+
+  const blog = {
+    id,
+    title,
+    date,
+    emoji: emoji || '📝',
+    excerpt: excerpt || '',
+    url: url || '',
+  };
+
+  if (idx === -1) blogs.push(blog);
+  else blogs[idx] = blog;
+
+  await saveBlogs(blogs);
+  res.json({ success: true, blog });
 });
 
 // ----------------------
